@@ -36,6 +36,7 @@ export type ApiResponse<T> = { data: T; status: number; headers: Headers };
 
 export async function apiRequest<T>(path: string, opts: Options = {}): Promise<ApiResponse<T>> {
   const token = opts.token ?? tokenStore.get();
+  if (!token) throw new ApiError(401, 'NO_TOKEN', 'No token entered yet.');
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -44,7 +45,7 @@ export async function apiRequest<T>(path: string, opts: Options = {}): Promise<A
     res = await fetch(API_BASE_URL + path, {
       method: opts.method ?? 'GET',
       headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        Authorization: `Bearer ${token}`,
         ...(opts.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...opts.headers,
       },

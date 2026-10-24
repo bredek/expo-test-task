@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
@@ -27,21 +27,29 @@ export default function RootLayout() {
   const [showSplash, setShowSplash] = useState(true);
   const hideSplash = useCallback(() => setShowSplash(false), []);
 
+  // Data belongs to a token: never show one token's cached data under another.
+  useEffect(() => {
+    queryClient.resetQueries();
+  }, [token]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <View style={styles.page}>
         <View style={styles.phone}>
           {token && <ClaimTracker key={token} />}
-          {token ? (
-            <Stack
-              screenOptions={{
-                headerStyle: { backgroundColor: colors.card },
-                headerTitleStyle: { fontWeight: '600' },
-                contentStyle: { backgroundColor: colors.bg },
-              }}
-            />
-          ) : (
-            <TokenScreen />
+          {/* The navigator always stays mounted (Expo Router expects it); without a token the
+              token screen covers it and no data screen is shown. */}
+          <Stack
+            screenOptions={{
+              headerStyle: { backgroundColor: colors.card },
+              headerTitleStyle: { fontWeight: '600' },
+              contentStyle: { backgroundColor: colors.bg },
+            }}
+          />
+          {!token && (
+            <View style={styles.overlay}>
+              <TokenScreen />
+            </View>
           )}
           {showSplash && <SplashScreen onFinish={hideSplash} />}
         </View>
@@ -54,4 +62,5 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: '#E4E7EC', alignItems: 'center' },
   phone: { flex: 1, width: '100%', maxWidth: 480, backgroundColor: colors.bg, overflow: 'hidden' },
+  overlay: { ...StyleSheet.absoluteFill, backgroundColor: colors.bg, zIndex: 5 },
 });
