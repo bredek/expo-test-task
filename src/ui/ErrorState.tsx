@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../api/client';
 import Button from './Button';
-import { colors, space } from './theme';
+import { colors, fonts, radius, space } from './theme';
 
 export function describeError(error: unknown): string {
   if (error instanceof ApiError) {
@@ -28,12 +28,12 @@ export default function ErrorState({ title = "Couldn't load", error, onRetry, re
 const styles = StyleSheet.create({
   box: {
     backgroundColor: colors.card,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: space.xl,
     gap: space.md,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  title: { fontSize: 18, fontWeight: '600', color: colors.text },
-  body: { color: colors.muted, fontSize: 15 },
+  title: { fontSize: 18, fontFamily: fonts.semibold, color: colors.text },
+  body: { color: colors.muted, fontSize: 15, fontFamily: fonts.regular },
 });

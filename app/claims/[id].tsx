@@ -6,7 +6,7 @@ import { claimStore, useClaimStore } from '../../src/claims/store';
 import { formatDateTime } from '../../src/lib/time';
 import Button from '../../src/ui/Button';
 import ErrorState from '../../src/ui/ErrorState';
-import { colors, space } from '../../src/ui/theme';
+import { colors, fonts, radius, space } from '../../src/ui/theme';
 
 export default function ClaimStatusScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -96,19 +96,19 @@ function Row({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   container: { padding: space.lg, gap: space.md, flexGrow: 1 },
-  hero: { borderRadius: 16, padding: space.xl, gap: space.sm, alignItems: 'center' },
-  status: { fontSize: 24, fontWeight: '700' },
-  heroBody: { color: colors.text, textAlign: 'center', fontSize: 15, lineHeight: 21 },
+  hero: { borderRadius: radius.lg, padding: space.xl, gap: space.sm, alignItems: 'center' },
+  status: { fontSize: 24, fontFamily: fonts.bold },
+  heroBody: { color: colors.text, textAlign: 'center', fontSize: 15, lineHeight: 21, fontFamily: fonts.regular },
   card: {
     backgroundColor: colors.card,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: space.lg,
     gap: space.sm,
     borderWidth: 1,
     borderColor: colors.border,
   },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: space.md },
-  rowLabel: { color: colors.muted, fontSize: 15 },
-  rowValue: { color: colors.text, fontSize: 15, flexShrink: 1, textAlign: 'right' },
-  note: { color: colors.warning, textAlign: 'center' },
+  rowLabel: { color: colors.muted, fontSize: 15, fontFamily: fonts.regular },
+  rowValue: { color: colors.text, fontSize: 15, flexShrink: 1, textAlign: 'right', fontFamily: fonts.regular },
+  note: { color: colors.warning, textAlign: 'center', fontFamily: fonts.regular },
 });

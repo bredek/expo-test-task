@@ -9,7 +9,7 @@ import { resolveAttempt, startClaim, type Outcome } from '../../src/claims/submi
 import { checkClaimAmount } from '../../src/lib/money';
 import Button from '../../src/ui/Button';
 import ErrorState from '../../src/ui/ErrorState';
-import { colors, space } from '../../src/ui/theme';
+import { colors, fonts, radius, space } from '../../src/ui/theme';
 
 export default function ClaimScreen() {
   const { asset } = useLocalSearchParams<{ asset: string }>();
@@ -226,47 +226,48 @@ const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
   card: {
     backgroundColor: colors.card,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: space.lg,
     gap: space.sm,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  h2: { fontSize: 18, fontWeight: '600', color: colors.text },
-  body: { fontSize: 15, color: colors.text, lineHeight: 21, flexShrink: 1 },
-  label: { fontSize: 12, color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  available: { fontSize: 20, fontWeight: '600', color: colors.text },
-  note: { fontSize: 13, color: colors.muted },
+  h2: { fontSize: 18, fontFamily: fonts.semibold, color: colors.text },
+  body: { fontSize: 15, color: colors.text, lineHeight: 21, flexShrink: 1, fontFamily: fonts.regular },
+  label: { fontSize: 12, color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: fonts.regular },
+  available: { fontSize: 20, fontFamily: fonts.semibold, color: colors.text },
+  note: { fontSize: 13, color: colors.muted, fontFamily: fonts.regular },
   inputRow: { flexDirection: 'row', gap: space.sm },
   input: {
     flex: 1,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: space.md,
+    fontFamily: fonts.semibold,
     fontSize: 20,
     minWidth: 0,
   },
   inputError: { borderColor: colors.negative },
   max: {
     paddingHorizontal: space.lg,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: colors.infoBg,
     justifyContent: 'center',
   },
-  maxText: { color: colors.brand, fontWeight: '700' },
-  error: { color: colors.negative, fontSize: 14 },
+  maxText: { color: colors.brand, fontFamily: fonts.bold },
+  error: { color: colors.negative, fontSize: 14, fontFamily: fonts.regular },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: space.xs },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: space.md },
-  rowLabel: { color: colors.muted, fontSize: 15 },
-  rowValue: { color: colors.text, fontSize: 15, flexShrink: 1, textAlign: 'right' },
-  strong: { fontWeight: '700' },
+  rowLabel: { color: colors.muted, fontSize: 15, fontFamily: fonts.regular },
+  rowValue: { color: colors.text, fontSize: 15, flexShrink: 1, textAlign: 'right', fontFamily: fonts.regular },
+  strong: { fontFamily: fonts.bold },
   dest: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
     padding: space.md,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
   },

@@ -3,7 +3,7 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { ApiError, apiRequest } from '../api/client';
 import { tokenStore, useToken } from '../lib/tokenStore';
 import Button from '../ui/Button';
-import { colors, space } from '../ui/theme';
+import { colors, fonts, radius, space } from '../ui/theme';
 
 export default function TokenScreen() {
   const { reason } = useToken();
@@ -57,8 +57,8 @@ export default function TokenScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: space.xl, justifyContent: 'center', gap: space.md },
-  title: { fontSize: 24, fontWeight: '700', color: colors.text },
-  body: { fontSize: 15, color: colors.muted, lineHeight: 21 },
+  title: { fontSize: 24, fontFamily: fonts.bold, color: colors.text },
+  body: { fontSize: 15, color: colors.muted, lineHeight: 21, fontFamily: fonts.regular },
   notice: {
     backgroundColor: colors.warningBg,
     color: colors.warning,
@@ -69,9 +69,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: space.md,
     fontSize: 16,
+    fontFamily: fonts.regular,
   },
-  error: { color: colors.negative },
+  error: { color: colors.negative, fontFamily: fonts.regular },
 });
