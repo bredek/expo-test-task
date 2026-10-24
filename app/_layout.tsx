@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SplashScreen from '../components/SplashScreen';
 import { ApiError } from '../src/api/client';
+import ClaimTracker from '../src/claims/ClaimTracker';
 import { useToken } from '../src/lib/tokenStore';
 import TokenScreen from '../src/screens/TokenScreen';
 import { colors } from '../src/ui/theme';
@@ -30,6 +31,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <View style={styles.page}>
         <View style={styles.phone}>
+          {token && <ClaimTracker key={token} />}
           {token ? (
             <Stack
               screenOptions={{

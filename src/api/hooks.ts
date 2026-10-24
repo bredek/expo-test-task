@@ -23,6 +23,7 @@ export function useBalances() {
 export function useClaimOptions(asset: string) {
   return useQuery({
     queryKey: keys.claimOptions(asset),
+    enabled: asset !== '',
     queryFn: async () =>
       (await apiRequest<ClaimOptions>(`/v1/claim-options?asset=${encodeURIComponent(asset)}`)).data,
   });
