@@ -20,6 +20,9 @@ B fixes both user complaints.
 - Expo Router.
 - A plain `fetch` client with a 15 s timeout.
 - Total payback = available + pending (claiming is already on its way out).
+- Activity removes duplicate items by `id` when merging pages. The API's cursor is an offset (`{"o":2}`), so new items arriving between page loads shift later pages and repeat entries. That showed up in the browser console as duplicate React keys. Without the fix, the totals would double-count.
+- Activity insights (a 30-day chart, earned, reversed and claimed totals, top exchanges) use the same exact BigInt math, valued at **today's** prices because the API has no historical prices, and the screen says so. Chart bars use a log scale so one large day doesn't flatten the rest. `Number` is used only for bar geometry, never for a displayed figure.
+- UI: the Inter font and an indigo palette. Amounts are never truncated: they wrap rather than hide digits.
 
 ## Working with AI
 
@@ -36,4 +39,5 @@ I used Claude Code (in plan mode first, then building), and the full session is 
 - **No end-to-end tests.** I tested flows manually with a headless browser script (validation, Max, double tap, resume after reload). Next: Playwright against a mock API that injects 504s.
 - **Clock skew:** freshness ("N s ago") uses the device clock against the server's `asOf`, clamped at 0. The D2 release rule compares two server timestamps, so skew doesn't affect money.
 - **Native:** only tested on web, as the brief requires. Inputs use `inputMode="decimal"`, but locale-specific number input on native wasn't checked.
-- **Activity** has no filters, and reversals show the related accrual id rather than linking to it.
+- **Activity** insights page through up to 10 pages automatically (200 items) to cover the 30-day window. A larger history would be cut off, and the footnote says "loaded so far" in that case. Reversals show the related accrual id rather than linking to it.
+- **Hosting:** after a deploy, the `cashmine-payback.expo.app` alias can take a few minutes to point to the new build. The per-deploy URL updates immediately.
