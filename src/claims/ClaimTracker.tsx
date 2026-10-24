@@ -9,7 +9,7 @@ import { resolveAttempt } from './submit';
 // - polls pending claims until they settle, then refreshes balances and activity
 export default function ClaimTracker() {
   const queryClient = useQueryClient();
-  const { claims, attempts } = useClaimStore();
+  const { claims } = useClaimStore();
 
   useEffect(() => {
     for (const asset of Object.keys(claimStore.get().attempts)) {
@@ -44,6 +44,5 @@ export default function ClaimTracker() {
     }
   }, [results, queryClient]);
 
-  void attempts;
   return null;
 }
