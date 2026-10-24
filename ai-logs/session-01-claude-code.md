@@ -3445,3 +3445,1308 @@ File created successfully at: /Users/bredek/Projects/test-claude/NOTES.md (file 
 ```
 
 </details>
+
+## #31 · Claude
+
+Before committing, I'm checking that the turn numbers in NOTES point to the right places, then writing the redacted raw transcript.
+
+**Tool: Bash** Re-export log and verify NOTES turn references
+
+```
+f=ai-logs/session-01-claude-code.md; python3 -I ai-logs/export_log.py ~/.claude/projects/-Users-bredek-Projects-test-claude/d4cf66c8-ccd6-4669-adca-0feea8b3f891.jsonl $f --since 2026-10-24T09:00:00Z; for pat in "HTTP/2 504" "idempotent-replayed: true" "Subtract right away and hold" "Production is still showing" "sorry I still have inputs" "That's it for now"; do l=$(grep -n "$pat" $f | head -1 | cut -d: -f1); [ -n "$l" ] && echo "$pat -> $(head -n $l $f | grep '^## #' | tail -1)"; done
+```
+
+<details><summary>result</summary>
+
+```
+HTTP/2 504 -> ## #24 · Claude
+idempotent-replayed: true -> ## #24 · Claude
+Subtract right away and hold -> ## #14 · Claude
+Production is still showing -> ## #29 · Claude
+sorry I still have inputs -> ## #7 · User
+That's it for now -> ## #18 · User
+```
+
+</details>
+
+**Tool: Bash** Write redacted raw transcript since 09:00; scan for secrets
+
+```
+python3 -I - <<'EOF'
+import json,re
+src='/Users/bredek/.claude/projects/-Users-bredek-Projects-test-claude/d4cf66c8-ccd6-4669-adca-0feea8b3f891.jsonl'
+tok=re.compile(r'ct1\.[\w.-]+'); em=re.compile(r'[\w.+-]+@[\w-]+\.[\w.]+')
+n=0
+with open('ai-logs/session-01-raw.jsonl','w') as out:
+  for line in open(src):
+    d=json.loads(line)
+    if d.get('type') not in ('user','assistant') or d.get('timestamp','')<'2026-10-24T09:00:00': continue
+    line=em.sub('[email redacted]', tok.sub('[token redacted]', line))
+    out.write(line); n+=1
+print(n,'records')
+EOF
+ls -la ai-logs; grep -c "ct1\.eyJ\|gmail" ai-logs/* || true; grep -rln "ct1\.eyJ" --exclude-dir=node_modules . || echo "repo clean"
+```
+
+<details><summary>result</summary>
+
+```
+285 records
+total 3240
+drwxr-xr-x   5 bredek  staff      160 24 жовт. 12:32 .
+drwxr-xr-x@ 21 bredek  staff      672 24 жовт. 12:32 ..
+-rw-r--r--   1 bredek  staff     3272 24 жовт. 12:18 export_log.py
+-rw-r--r--   1 bredek  staff   126101 24 жовт. 12:32 session-01-claude-code.md
+-rw-r--r--   1 bredek  staff  1524212 24 жовт. 12:32 session-01-raw.jsonl
+ai-logs/session-01-claude-code.md:1
+ai-logs/export_log.py:0
+ai-logs/session-01-raw.jsonl:1
+repo clean
+```
+
+</details>
+
+**Tool: Bash** Inspect the remaining gmail match
+
+```
+grep -o ".\{60\}gmail.\{40\}" ai-logs/session-01-claude-code.md | head -3
+```
+
+<details><summary>result</summary>
+
+```
+-l ai-logs/session-01-claude-code.md && (grep -c "ct1\.eyJ\|gmail" ai-logs/session-01-claude-code.md || t
+```
+
+</details>
+
+## #32 · Claude
+
+That match is only the text of my own grep command, so no secrets are present. Committing the docs and logs now.
+
+**Tool: Bash** Commit docs and logs, push, show history
+
+```
+git add -A && git commit -q -m "docs: README, NOTES and AI session logs (token and email redacted)
+
+Co-Authored-By: Claude Opus 5.5 <[email redacted]>" && git push -q; git log --oneline; git status --short | head; date -u +%H:%M
+```
+
+<details><summary>result</summary>
+
+```
+2c1936e docs: README, NOTES and AI session logs (token and email redacted)
+5d6973f chore: tidy claim tracker
+1fbc68e fix: keep navigator mounted under token screen, reset cache on token change
+2d4fe84 feat: paginated activity history
+86752d1 feat: claim form, review step, status tracking and attempt resume
+6dd9f33 feat: idempotent claim submit with same-key retries, plus D2/D3 tests
+c2bc621 chore: link EAS Hosting project
+915d945 feat: balances home with USD total, freshness and error states
+6cba117 feat: exact BigInt amount math with unit tests
+2538140 feat: scaffold Expo Router app, API client, token gate
+09:33
+```
+
+</details>
+
+## #33 · Claude
+
+Everything is submitted: the app is live, all 10 commits are pushed, and `NOTES.md`, `README.md` and the AI logs are in the repo.
+
+- **Live link:** https://cashmine-payback.expo.app
+- **Repo:** https://github.com/bredek/expo-test-task (10 commits, none squashed)
+
+**What I checked:**
+- **Tests:** all 32 unit tests pass, and the type check is clean.
+- **Home:** screenshotted on the live site at 390 px. It shows exact amounts (ETH at 18 decimals), the USD total and the freshness line.
+- **Claim form:** I drove it in a headless browser. It rejects `.5`, `05`, too many decimals, below the minimum and above available, and Max fills the exact available.
+- **Double tap:** a double tap on Claim created exactly one claim, which the API's activity list confirms.
+- **Reload mid-claim:** a claim left unresolved by a reload resumed on the next open and resolved. The balance showed the amount held right away.
+- **Unknown outcome against the real API:** a claim request returned 504 but had actually created the claim. Re-sending with the same key returned the original claim instead of a second one. That's the strongest point in NOTES.
+- **Secrets:** the token isn't in the repo, the build or the logs. Your email is redacted from the logs.
+
+**One thing that went wrong:** my first deploy of the full app shipped an outdated Activity screen, because the build reused a stale cache. I found it by screenshotting the live site, rebuilt with the cache cleared, and confirmed the fix on the live URL. It's the "AI output was wrong" example in NOTES.
+
+**Before you send:**
+1. **Read the "Working with AI" section of `NOTES.md`.** I drafted the three moments in your voice from the logs. The turn numbers are correct, but the wording should be yours.
+2. **Re-export the log at the very end.** The current export doesn't include this message:
+   ```
+   python3 -I ai-logs/export_log.py ~/.claude/projects/-Users-bredek-Projects-test-claude/d4cf66c8-ccd6-4669-adca-0feea8b3f891.jsonl ai-logs/session-01-claude-code.md --since 2026-10-24T09:00:00Z
+   ```
+   Then commit and push. I can do that for you, including refreshing the raw transcript.
+3. **Known issues are listed in NOTES.** The main one: if a claim that resumes on app open turns out to be rejected, the app drops it without telling the user.
+
+My test claims were made with your token: 20, 10 and 11 USDT, and the 11 failed. They show up in Activity alongside the Max claim of about 840 USDT that I think you made on the live link. The data is fake, but reviewers use their own tokens, so they won't see any of it.
+
+## #34 · User
+
+let's make up-to-date redesign to follow the best UI/UX experiense, add modern font, pleasent color palette, add graphs or any other necessery activity tools to activity screen
+
+## #35 · Claude
+
+I'm keeping all the money and claim logic as it is and changing only the UI, so nothing we've verified breaks. Here's how I'll do it:
+- **Font:** Inter, loaded with `expo-font`.
+- **Palette:** soft indigo with mint for gains and coral for losses, plus a colored badge per asset.
+- **Home:** a gradient hero card at the top.
+- **Activity:** an insights section with a 30-day payback bar chart drawn with `react-native-svg`, totals for earned, reversed and claimed, filters by type and asset, and the list grouped by day.
+
+I'll commit after each step.
+
+**Tool: Bash** Install font, gradient and SVG packages
+
+```
+npx expo install expo-font @expo-google-fonts/inter expo-linear-gradient react-native-svg 2>&1 | tail -2; grep -E "inter|font|gradient|svg" package.json
+```
+
+<details><summary>result</summary>
+
+```
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+› Added config plugin: expo-font
+    "@expo-google-fonts/inter": "^0.4.2",
+    "expo-font": "~58.0.10",
+    "expo-linear-gradient": "~58.0.3",
+    "react-native-svg": "15.16.0",
+```
+
+</details>
+
+**Tool: Write** /Users/bredek/Projects/test-claude/src/ui/theme.ts
+
+```
+import type { TextStyle } from 'react-native';
+
+export const colors = {
+  bg: '#F5F6FB',
+  card: '#FFFFFF',
+  text: '#0F172A',
+  muted: '#64748B',
+  subtle: '#94A3B8',
+  border: '#E7EAF3',
+  brand: '#5B5BD6',
+  brandDark: '#4338CA',
+  brandSoft: '#EEF0FF',
+  brandText: '#FFFFFF',
+  positive: '#0E9F6E',
+  positiveSoft: '#E6F7F0',
+  negative: '#E5484D',
+  negativeSoft: '#FDECEC',
+  warning: '#B45309',
+  warningSoft: '#FFF6E5',
+  // kept for older call sites
+  warningBg: '#FFF6E5',
+  dangerBg: '#FDECEC',
+  infoBg: '#EEF0FF',
+};
+
+export const gradients = {
+  hero: ['#4F46E5', '#7C3AED'] as const,
+};
+
+const ASSET_COLORS: Record<string, string> = {
+  USDT: '#26A17B',
+  USDC: '#2775CA',
+  BTC: '#F7931A',
+  ETH: '#627EEA',
+  SOL: '#9945FF',
+  BNB: '#F0B90B',
+};
+
+export function assetColor(asset: string): string {
+  return ASSET_COLORS[asset] ?? colors.brand;
+}
+
+export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
+export const radius = { sm: 10, md: 14, lg: 20, xl: 28, pill: 999 };
+
+// Inter is loaded in app/_layout.tsx. React Native picks a font file per weight,
+// so weights are expressed as families.
+export const fonts = {
+  regular: 'Inter_400Regular',
+  medium: 'Inter_500Medium',
+  semibold: 'Inter_600SemiBold',
+  bold: 'Inter_700Bold',
+};
+
+export const type = {
+  display: { fontFamily: fonts.bold, fontSize: 36, letterSpacing: -1, color: colors.text },
+  title: { fontFamily: fonts.bold, fontSize: 22, letterSpacing: -0.4, color: colors.text },
+  heading: { fontF
+… (truncated)
+```
+
+**Tool: Write** /Users/bredek/Projects/test-claude/src/ui/Button.tsx
+
+```
+import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
+import { colors, fonts, radius } from './theme';
+
+type Props = {
+  title: string;
+  onPress: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'md' | 'sm';
+};
+
+export default function Button({ title, onPress, disabled, loading, variant = 'primary', size = 'md' }: Props) {
+  const inactive = disabled || loading;
+  const primary = variant === 'primary';
+  const fg = primary ? colors.brandText : colors.brand;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: inactive }}
+      disabled={inactive}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.base,
+        size === 'sm' && styles.sm,
+        styles[variant],
+        inactive && styles.inactive,
+        pressed && !inactive && styles.pressed,
+      ]}
+    >
+      {loading ? (
+        <ActivityIndicator color={fg} />
+      ) : (
+        <Text style={[styles.text, size === 'sm' && styles.textSm, { color: fg }]}>{title}</Text>
+      )}
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  base: {
+    minHeight: 52,
+    borderRadius: radius.md,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sm: { minHeight: 40, borderRadius: radius.sm, paddingHorizontal: 14 },
+  primary: { backgroundColor: colors.brand },
+  secondary: { backgroundColor: colors.brandSoft },
+  ghost: { background
+… (truncated)
+```
+
+**Tool: Write** /Users/bredek/Projects/test-claude/src/ui/AssetIcon.tsx
+
+```
+import { StyleSheet, Text, View } from 'react-native';
+import { assetColor, fonts } from './theme';
+
+export default function AssetIcon({ asset, size = 40 }: { asset: string; size?: number }) {
+  const color = assetColor(asset);
+  return (
+    <View
+      style={[
+        styles.icon,
+        { width: size, height: size, borderRadius: size / 2, backgroundColor: color + '1F' },
+      ]}
+    >
+      <Text style={[styles.text, { color, fontSize: size * 0.32 }]}>{asset.slice(0, 4)}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  icon: { alignItems: 'center', justifyContent: 'center' },
+  text: { fontFamily: fonts.bold, letterSpacing: -0.3 },
+});
+```
+
+**Tool: Write** /Users/bredek/Projects/test-claude/src/ui/Card.tsx
+
+```
+import type { ReactNode } from 'react';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { colors, radius, shadow, space } from './theme';
+
+export default function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  return <View style={[styles.card, style]}>{children}</View>;
+}
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: space.lg,
+    gap: space.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadow.card,
+  },
+});
+```
+
+<details><summary>result</summary>
+
+```
+The file /Users/bredek/Projects/test-claude/src/ui/theme.ts has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+
+</details>
+
+<details><summary>result</summary>
+
+```
+The file /Users/bredek/Projects/test-claude/src/ui/Button.tsx has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+
+</details>
+
+<details><summary>result</summary>
+
+```
+File created successfully at: /Users/bredek/Projects/test-claude/src/ui/AssetIcon.tsx (file state is current in your context — no need to Read it back)
+```
+
+</details>
+
+<details><summary>result</summary>
+
+```
+File created successfully at: /Users/bredek/Projects/test-claude/src/ui/Card.tsx (file state is current in your context — no need to Read it back)
+```
+
+</details>
+
+**Tool: Read** /Users/bredek/Projects/test-claude/app/_layout.tsx
+
+<details><summary>result</summary>
+
+```
+1	import { useCallback, useEffect, useState } from 'react';
+2	import { Stack } from 'expo-router';
+3	import { StatusBar } from 'expo-status-bar';
+4	import { StyleSheet, View } from 'react-native';
+5	import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+6	import SplashScreen from '../components/SplashScreen';
+7	import { ApiError } from '../src/api/client';
+8	import ClaimTracker from '../src/claims/ClaimTracker';
+9	import { useToken } from '../src/lib/tokenStore';
+10	import TokenScreen from '../src/screens/TokenScreen';
+11	import { colors } from '../src/ui/theme';
+12	
+13	const queryClient = new QueryClient({
+14	  defaultOptions: {
+15	    queries: {
+16	      // Only transient failures are retried; 4xx answers are final.
+17	      retry: (count, error) => error instanceof ApiError && error.retryable && count < 3,
+18	      retryDelay: (count, error) =>
+19	        error instanceof ApiError && error.retryAfterMs ? error.retryAfterMs : Math.min(1000 * 2 ** count, 8000),
+20	    },
+21	    mutations: { retry: false },
+22	  },
+23	});
+24	
+25	export default function RootLayout() {
+26	  const { token } = useToken();
+27	  const [showSplash, setShowSplash] = useState(true);
+28	  const hideSplash = useCallback(() => setShowSplash(false), []);
+29	
+30	  // Data belongs to a token: never show one token's cached data under another.
+31	  useEffect(() => {
+32	    queryClient.resetQueries();
+33	  }, [token]);
+34	
+35	  return (
+36	    <QueryClientProvider client={queryClient}>
+37	  
+… (truncated)
+```
+
+</details>
+
+**Tool: Bash** Load Inter fonts and restyle header and splash
+
+```
+python3 - <<'EOF'
+p='app/_layout.tsx'; s=open(p).read()
+s=s.replace("import { Stack } from 'expo-router';","import { Stack } from 'expo-router';\nimport {\n  Inter_400Regular,\n  Inter_500Medium,\n  Inter_600SemiBold,\n  Inter_700Bold,\n  useFonts,\n} from '@expo-google-fonts/inter';")
+s=s.replace("import { colors } from '../src/ui/theme';","import { colors, fonts } from '../src/ui/theme';")
+s=s.replace("""  const hideSplash = useCallback(() => setShowSplash(false), []);
+""","""  const hideSplash = useCallback(() => setShowSplash(false), []);
+  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
+  // If the font fails to load we fall back to the system font rather than block the app.
+  const ready = fontsLoaded || !!fontError;
+""")
+s=s.replace("""              headerStyle: { backgroundColor: colors.card },
+              headerTitleStyle: { fontWeight: '600' },
+              contentStyle: { backgroundColor: colors.bg },""","""              headerStyle: { backgroundColor: colors.bg },
+              headerShadowVisible: false,
+              headerTintColor: colors.brand,
+              headerTitleStyle: { fontFamily: fonts.semibold, fontSize: 17, color: colors.text },
+              headerBackButtonDisplayMode: 'minimal',
+              contentStyle: { backgroundColor: colors.bg },""")
+s=s.replace("{showSplash && <SplashScreen onFinish={hideSplash} />}","{(showSplash || !ready) && <SplashScreen onFinish={hideSplash} />
+… (truncated)
+```
+
+<details><summary>result</summary>
+
+```
+(Bash completed with no output)
+```
+
+</details>
+
+## #36 · Claude
+
+Now the Home and asset card redesign.
+
+**Tool: Write** /Users/bredek/Projects/test-claude/src/ui/AssetCard.tsx
+
+```
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import type { AdjustedBalance } from '../claims/adjustments';
+import { formatUsd, isZero, usdValue } from '../lib/money';
+import AssetIcon from './AssetIcon';
+import Card from './Card';
+import { colors, fonts, radius, space, type } from './theme';
+
+type Props = { balance: AdjustedBalance; onClaim: () => void };
+
+export default function AssetCard({ balance: b, onClaim }: Props) {
+  const canClaim = !isZero(b.available);
+  return (
+    <Card style={styles.card}>
+      <View style={styles.top}>
+        <AssetIcon asset={b.asset} />
+        <View style={styles.titleCol}>
+          <Text style={type.heading}>{b.asset}</Text>
+          <Text style={type.caption}>{formatUsd(usdValue(b.available, b.usdPrice))} available</Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Claim ${b.asset}`}
+          onPress={onClaim}
+          disabled={!canClaim}
+          style={({ pressed }) => [styles.claim, !canClaim && styles.claimDisabled, pressed && { opacity: 0.85 }]}
+        >
+          <Text style={[styles.claimText, !canClaim && { color: colors.subtle }]}>Claim</Text>
+        </Pressable>
+      </View>
+
+      <Text style={[type.number, styles.amount]} selectable numberOfLines={1} adjustsFontSizeToFit>
+        {b.available}
+        <Text style={styles.unit}> {b.asset}</Text>
+      </Text>
+
+      <View style={styles.chips}>
+        <Chip label="Pending" value={b.pendin
+… (truncated)
+```
+
+**Tool: Read** /Users/bredek/Projects/test-claude/app/index.tsx
+
+<details><summary>result</summary>
+
+```
+The file /Users/bredek/Projects/test-claude/src/ui/AssetCard.tsx has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+
+</details>
+
+<details><summary>result</summary>
+
+```
+1	import { useMemo } from 'react';
+2	import { Link, Stack, useRouter } from 'expo-router';
+3	import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+4	import { useBalances } from '../src/api/hooks';
+5	import { adjustBalances } from '../src/claims/adjustments';
+6	import { claimStore, useClaimStore } from '../src/claims/store';
+7	import { formatUsd, sumFixed, usdValue } from '../src/lib/money';
+8	import { formatAge, formatTime, useNow } from '../src/lib/time';
+9	import { tokenStore } from '../src/lib/tokenStore';
+10	import AssetCard from '../src/ui/AssetCard';
+11	import ErrorState, { describeError } from '../src/ui/ErrorState';
+12	import { colors, space } from '../src/ui/theme';
+13	
+14	const STALE_AFTER_MS = 60_000;
+15	
+16	export default function Home() {
+17	  const router = useRouter();
+18	  const balances = useBalances();
+19	  const { claims, attempts } = useClaimStore();
+20	  const now = useNow();
+```
+
+</details>
+
+**Tool: Write** /Users/bredek/Projects/test-claude/app/index.tsx
+
+```
+import { useMemo } from 'react';
+import { Stack, useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useBalances } from '../src/api/hooks';
+import { adjustBalances } from '../src/claims/adjustments';
+import { claimStore, useClaimStore } from '../src/claims/store';
+import { formatUsd, sumFixed, usdValue } from '../src/lib/money';
+import { formatAge, formatTime, useNow } from '../src/lib/time';
+import { tokenStore } from '../src/lib/tokenStore';
+import AssetCard from '../src/ui/AssetCard';
+import ErrorState, { describeError } from '../src/ui/ErrorState';
+import { colors, fonts, gradients, radius, space, type } from '../src/ui/theme';
+
+const STALE_AFTER_MS = 60_000;
+
+export default function Home() {
+  const router = useRouter();
+  const balances = useBalances();
+  const { claims, attempts } = useClaimStore();
+  const now = useNow();
+
+  const adjusted = useMemo(
+    () => (balances.data ? adjustBalances(balances.data.items, balances.data.asOf, claims, attempts) : []),
+    [balances.data, claims, attempts],
+  );
+
+  // Total = what is yours and not yet paid out: available + pending. Claiming is on its way out.
+  const totals = useMemo(() => {
+    const available = sumFixed(adjusted.map((b) => usdValue(b.available, b.usdPrice)));
+    const pending = sumFixed(adjusted.map((b) => usdValue(b.pending, b.usdPrice)));
+    return {
+   
+… (truncated)
+```
+
+**Tool: Bash** Typecheck and screenshot redesigned home
+
+```
+npx tsc --noEmit 2>&1 | head; S=/private/tmp/claude-501/-Users-bredek-Projects-test-claude/d4cf66c8-ccd6-4669-adca-0feea8b3f891/scratchpad; cd $S && CM_TOKEN='[token redacted]' node shot.mjs http://localhost:8081/ $S/home2.png 8000 | grep -E "exception|console" | head
+```
+
+<details><summary>result</summary>
+
+```
+The file /Users/bredek/Projects/test-claude/app/index.tsx has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+
+</details>
+
+<details><summary>result</summary>
+
+```
+Shell cwd was reset to /Users/bredek/Projects/test-claude
+```
+
+</details>
+
+**Tool: Read** /private/tmp/claude-501/-Users-bredek-Projects-test-claude/d4cf66c8-ccd6-4669-adca-0feea8b3f891/scratchpad/home2.png
+
+<details><summary>result</summary>
+
+```
+
+```
+
+</details>
+
+**Tool: Bash** Stop truncating amounts; commit home redesign
+
+```
+python3 - <<'EOF'
+p='src/ui/AssetCard.tsx'; s=open(p).read()
+s=s.replace("<Text style={[type.number, styles.amount]} selectable numberOfLines={1} adjustsFontSizeToFit>","{/* Never truncate an amount: wrapping is fine, hidden digits are not. */}\n      <Text style={[type.number, styles.amount]} selectable>")
+s=s.replace("""      <Text style={[type.number, styles.chipValue]} selectable numberOfLines={1}>""","""      <Text style={[type.number, styles.chipValue]} selectable>""")
+s=s.replace("amount: { fontSize: 24, letterSpacing: -0.5 },","amount: { fontSize: 22, letterSpacing: -0.5, lineHeight: 28 },")
+open(p,'w').write(s)
+EOF
+npx tsc --noEmit && git add -A && git commit -q -m "feat(ui): Inter font, indigo palette, redesigned home and asset cards
+
+Co-Authored-By: Claude Opus 5.5 <[email redacted]>" && git push -q; git log --oneline | head -1
+```
+
+<details><summary>result</summary>
+
+```
+803af1e feat(ui): Inter font, indigo palette, redesigned home and asset cards
+```
+
+</details>
+
+## #37 · Claude
+
+Next is Activity insights. I'm putting the day-by-day aggregation in a pure, tested module, so the chart and totals use the same exact math as everything else.
+
+**Tool: Write** /Users/bredek/Projects/test-claude/src/lib/insights.ts
+
+```
+import type { ActivityItem } from '../api/types';
+import { type Fixed, formatUsd, sumFixed, usdValue } from './money';
+
+// Activity amounts are signed decimal strings ("-0.5"). USD figures here use
+// today's prices (the API has no historical prices), which the UI states.
+
+export type DayBucket = { day: string; earned: Fixed; reversed: Fixed };
+
+export type Insights = {
+  days: DayBucket[]; // oldest first, one per calendar day (local time)
+  earned: Fixed;
+  reversed: Fixed;
+  claimed: Fixed;
+  byExchange: { exchange: string; earned: Fixed }[];
+  count: number;
+};
+
+const ZERO: Fixed = { units: 0n, scale: 0 };
+
+function absUsd(item: ActivityItem, prices: Record<string, string>): Fixed | null {
+  const price = prices[item.asset];
+  if (!price) return null;
+  const abs = item.amount.startsWith('-') ? item.amount.slice(1) : item.amount;
+  try {
+    return usdValue(abs, price);
+  } catch {
+    return null; // malformed amount: leave it out of the totals rather than guess
+  }
+}
+
+export function dayKey(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+export function buildInsights(
+  items: ActivityItem[],
+  prices: Record<string, string>,
+  now: Date,
+  dayCount = 30,
+): Insights {
+  const keys: string[] = [];
+  for (let i = dayCount - 1; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    keys.push(dayKey(d));
+  }
+  const buckets = new Map(keys.map((k) =>
+… (truncated)
+```
+
+**Tool: Write** /Users/bredek/Projects/test-claude/src/lib/insights.test.ts
+
+```
+import { describe, expect, it } from 'vitest';
+import type { ActivityItem } from '../api/types';
+import { buildInsights } from './insights';
+import { formatUsd } from './money';
+
+const item = (p: Partial<ActivityItem>): ActivityItem => ({
+  id: Math.random().toString(36),
+  type: 'accrual',
+  asset: 'USDT',
+  amount: '1',
+  status: 'confirmed',
+  exchange: 'Binance',
+  createdAt: '2026-10-24T10:00:00.000',
+  relatedId: null,
+  ...p,
+});
+
+describe('activity insights', () => {
+  const now = new Date('2026-10-24T12:00:00.000');
+  const prices = { USDT: '1', BTC: '50000' };
+
+  it('totals earned, reversed and completed claims in USD with signed amounts', () => {
+    const r = buildInsights(
+      [
+        item({ amount: '9.81' }),
+        item({ asset: 'BTC', amount: '0.0001', exchange: 'OKX' }),
+        item({ type: 'reversal', amount: '-2.5', exchange: 'Binance' }),
+        item({ type: 'claim', amount: '-10', status: 'completed', exchange: null }),
+        item({ type: 'claim', amount: '-11', status: 'failed', exchange: null }),
+      ],
+      prices,
+      now,
+    );
+    expect(formatUsd(r.earned)).toBe('$14.81');
+    expect(formatUsd(r.reversed)).toBe('$2.50');
+    expect(formatUsd(r.claimed)).toBe('$10.00'); // the failed claim is not counted
+    expect(r.byExchange.map((e) => e.exchange)).toEqual(['Binance', 'OKX']);
+  });
+
+  it('buckets by local day, oldest first, and ignores items outside the window', () => {
+    const r = buildInsights(
+      [item({ amount: '1' }), it
+… (truncated)
+```
+
+**Tool: Bash** Run tests including insights
+
+```
+npx vitest run 2>&1 | grep -E "Tests|FAIL|✗|×|Expected|Received" | head
+```
+
+<details><summary>result</summary>
+
+```
+File created successfully at: /Users/bredek/Projects/test-claude/src/lib/insights.ts (file state is current in your context — no need to Read it back)
+```
+
+</details>
+
+<details><summary>result</summary>
+
+```
+File created successfully at: /Users/bredek/Projects/test-claude/src/lib/insights.test.ts (file state is current in your context — no need to Read it back)
+```
+
+</details>
+
+<details><summary>result</summary>
+
+```
+Tests  35 passed (35)
+```
+
+</details>
+
+## #38 · Claude
+
+Now the chart component and the redesigned Activity screen.
+
+**Tool: Write** /Users/bredek/Projects/test-claude/src/ui/PaybackChart.tsx
+
+```
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import Svg, { Line, Rect } from 'react-native-svg';
+import { type DayBucket, toChartNumber } from '../lib/insights';
+import { formatUsd } from '../lib/money';
+import { colors, fonts, space, type } from './theme';
+
+const HEIGHT = 140;
+const NEG_HEIGHT = 28; // room below the baseline for reversals
+
+function label(day: string) {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+export default function PaybackChart({ days }: { days: DayBucket[] }) {
+  const [width, setWidth] = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);
+
+  const earned = days.map((d) => toChartNumber(d.earned));
+  const reversed = days.map((d) => toChartNumber(d.reversed));
+  const max = Math.max(...earned, ...reversed, 0.0001);
+  const slot = width / Math.max(days.length, 1);
+  const barW = Math.max(2, slot * 0.62);
+  const pos = HEIGHT - NEG_HEIGHT;
+
+  const focus = selected ?? days.length - 1;
+  const d = days[focus];
+
+  return (
+    <View>
+      <View style={styles.readout}>
+        <Text style={type.caption}>{selected === null ? 'Today' : label(d.day)}</Text>
+        <Text style={styles.readoutValue}>+{formatUsd(d.earned)}</Text>
+        {toChartNumber(d.reversed) > 0 && (
+          <Text style={styles.readoutNeg}>−{formatUsd(d.reversed)} reversed</Text>
+       
+… (truncated)
+```
+
+**Tool: Write** /Users/bredek/Projects/test-claude/app/activity.tsx
+
+```
+import { useEffect, useMemo, useState } from 'react';
+import { Stack } from 'expo-router';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useActivity, useBalances } from '../src/api/hooks';
+import type { ActivityItem } from '../src/api/types';
+import { buildInsights, dayKey } from '../src/lib/insights';
+import { formatUsd } from '../src/lib/money';
+import AssetIcon from '../src/ui/AssetIcon';
+import Button from '../src/ui/Button';
+import Card from '../src/ui/Card';
+import ErrorState, { describeError } from '../src/ui/ErrorState';
+import PaybackChart from '../src/ui/PaybackChart';
+import { colors, fonts, radius, space, type } from '../src/ui/theme';
+
+// Insights need the whole 30-day window, so we page through automatically,
+// capped to stay well inside the API's rate limits.
+const MAX_AUTO_PAGES = 10;
+
+type Filter = 'all' | ActivityItem['type'];
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'accrual', label: 'Earned' },
+  { key: 'reversal', label: 'Reversed' },
+  { key: 'claim', label: 'Claims' },
+];
+
+const TYPE_LABEL: Record<ActivityItem['type'], string> = {
+  accrual: 'Payback earned',
+  reversal: 'Payback reversed',
+  claim: 'Claim',
+};
+
+type Row = { kind: 'header'; key: string; title: string } | { kind: 'item'; key: string; item: ActivityItem };
+
+function dayTitle(iso: string, now: Date) {
+  const key = dayKey(new Date(iso));
+  if (key === dayKey(now)) retu
+… (truncated)
+```
+
+**Tool: Bash** Typecheck and screenshot new activity screen
+
+```
+npx tsc --noEmit 2>&1 | head; S=/private/tmp/claude-501/-Users-bredek-Projects-test-claude/d4cf66c8-ccd6-4669-adca-0feea8b3f891/scratchpad; cd $S && CM_TOKEN='[token redacted]' node shot.mjs http://localhost:8081/activity $S/act2.png 12000 | head -30
+```
+
+<details><summary>result</summary>
+
+```
+File created successfully at: /Users/bredek/Projects/test-claude/src/ui/PaybackChart.tsx (file state is current in your context — no need to Read it back)
+```
+
+</details>
+
+<details><summary>result</summary>
+
+```
+The file /Users/bredek/Projects/test-claude/app/activity.tsx has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+
+</details>
+
+<details><summary>result</summary>
+
+```
+console.error: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. .$act_2hvfc
+console.error: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. .$act_2hvfc
+console.error: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. .$act_2hvfc
+--- visible text ---
+Activity
+Payback, last 30 days
+Today
++$112.18
+25 вер.
+10 жовт.
+Today
+In USD at today's prices · 33 entries
+EARNED
+$35,278.72
+REVERSED
+$5.79
+CLAIMED
+$4,823.13
+Top exchanges
+Binance
+$34,884.40
+Bybit
+$187.51
+OKX
+$187.46
+Bitget
+$19.34
+All
+Earned
+Reversed
+Shell cwd was reset to /Users/bredek/Projects/test-claude
+```
+
+</details>
+
+**Tool: Bash** Dedupe activity pages, add test, re-check screen
+
+```
+echo -n "eyJvIjoyfQ" | base64 -d 2>/dev/null; echo; python3 - <<'EOF'
+p='src/lib/insights.ts'; s=open(p).read()
+s=s.replace("export function dayKey(","""/**
+ * Merges activity pages, keeping the first copy of each id. The API's cursor is an
+ * offset, so items created between page loads shift later pages and repeat entries.
+ */
+export function mergePages(pages: { items: ActivityItem[] }[]): ActivityItem[] {
+  const seen = new Set<string>();
+  const out: ActivityItem[] = [];
+  for (const page of pages) {
+    for (const item of page.items) {
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+      out.push(item);
+    }
+  }
+  return out;
+}
+
+export function dayKey(""")
+open(p,'w').write(s)
+p='app/activity.tsx'; s=open(p).read()
+s=s.replace("const items = useMemo(() => activity.data?.pages.flatMap((p) => p.items) ?? [], [activity.data]);","const items = useMemo(() => mergePages(activity.data?.pages ?? []), [activity.data]);")
+s=s.replace("import { buildInsights, dayKey } from '../src/lib/insights';","import { buildInsights, dayKey, mergePages } from '../src/lib/insights';")
+open(p,'w').write(s)
+p='src/lib/insights.test.ts'; s=open(p).read()
+s=s.replace("import { buildInsights } from './insights';","import { buildInsights, mergePages } from './insights';")
+s+="""
+describe('activity paging', () => {
+  it('drops items repeated across pages (offset cursor shifts when new items arrive)', () => {
+    const a = item({ id: 'a' });
+    const b = item({ id: 'b' });
+    const c 
+… (truncated)
+```
+
+<details><summary>result</summary>
+
+```
+{"o":2
+      Tests  36 passed (36)
+In USD at today's prices · 32 entries
+Shell cwd was reset to /Users/bredek/Projects/test-claude
+```
+
+</details>
+
+**Tool: Read** /private/tmp/claude-501/-Users-bredek-Projects-test-claude/d4cf66c8-ccd6-4669-adca-0feea8b3f891/scratchpad/act3.png
+
+<details><summary>result</summary>
+
+```
+
+```
+
+</details>
+
+**Tool: Bash** Sqrt-scale chart, full-width stats; re-screenshot
+
+```
+python3 - <<'EOF'
+p='src/ui/PaybackChart.tsx'; s=open(p).read()
+s=s.replace("""  const earned = days.map((d) => toChartNumber(d.earned));
+  const reversed = days.map((d) => toChartNumber(d.reversed));""","""  // Square-root scale: one large day would otherwise flatten every other bar.
+  // Exact values are always shown in the readout above the chart.
+  const earned = days.map((d) => Math.sqrt(toChartNumber(d.earned)));
+  const reversed = days.map((d) => Math.sqrt(toChartNumber(d.reversed)));""")
+open(p,'w').write(s)
+
+p='app/activity.tsx'; s=open(p).read()
+s=s.replace("""      <View style={styles.stats}>
+        <Stat label="Earned" value={formatUsd(insights.earned)} color={colors.positive} />
+        <Stat label="Reversed" value={formatUsd(insights.reversed)} color={colors.negative} />
+        <Stat label="Claimed" value={formatUsd(insights.claimed)} color={colors.brand} />
+      </View>""","""      <Card style={styles.statsCard}>
+        <Stat label="Earned" value={formatUsd(insights.earned)} color={colors.positive} />
+        <View style={styles.statDivider} />
+        <Stat label="Reversed by exchanges" value={formatUsd(insights.reversed)} color={colors.negative} />
+        <View style={styles.statDivider} />
+        <Stat label="Claimed (completed)" value={formatUsd(insights.claimed)} color={colors.brand} />
+      </Card>""")
+s=s.replace("""      <Text style={[styles.statValue, { color }]} numberOfLines={1} adjustsFontSizeToFit>
+        {value}
+      </Text>""","""      <
+… (truncated)
+```
+
+<details><summary>result</summary>
+
+```
+Shell cwd was reset to /Users/bredek/Projects/test-claude
+```
+
+</details>
+
+**Tool: Read** /private/tmp/claude-501/-Users-bredek-Projects-test-claude/d4cf66c8-ccd6-4669-adca-0feea8b3f891/scratchpad/act4.png
+
+<details><summary>result</summary>
+
+```
+
+```
+
+</details>
+
+**Tool: Bash** Log-scale chart; apply Inter fonts to remaining screens
+
+```
+python3 - <<'EOF'
+import re
+p='src/ui/PaybackChart.tsx'; s=open(p).read()
+s=s.replace("// Square-root scale: one large day would otherwise flatten every other bar.","// Log scale: one large day would otherwise flatten every other bar.")
+s=s.replace("Math.sqrt(toChartNumber(d.earned))","Math.log1p(toChartNumber(d.earned))").replace("Math.sqrt(toChartNumber(d.reversed))","Math.log1p(toChartNumber(d.reversed))")
+open(p,'w').write(s)
+
+for p in ['app/claim/[asset].tsx','app/claims/[id].tsx','src/screens/TokenScreen.tsx','src/ui/ErrorState.tsx']:
+    s=open(p).read()
+    s=s.replace("fontWeight: '700'","fontFamily: fonts.bold").replace("fontWeight: '600'","fontFamily: fonts.semibold")
+    # body-ish text styles without a family get the regular face
+    s=re.sub(r"(\{ (?:fontSize: \d+, )?color: colors\.(?:text|muted|negative|warning)[^}]*?)( \})", lambda m: m.group(1)+", fontFamily: fonts.regular"+m.group(2) if 'fontFamily' not in m.group(1) else m.group(0), s)
+    s=s.replace("borderRadius: 16,","borderRadius: radius.lg,").replace("borderRadius: 12,","borderRadius: radius.md,")
+    s=re.sub(r"import \{ ([^}]*) \} from '(\.\./)+(src/)?ui/theme';", lambda m: "import { "+", ".join(sorted(set([x.strip() for x in m.group(1).split(',')]+['fonts','radius'])))+" } from '"+m.group(0).split("from '")[1], s)
+    open(p,'w').write(s)
+EOF
+grep -n "ui/theme'" app/claim/\[asset\].tsx app/claims/\[id\].tsx src/screens/TokenScreen.tsx src/ui/ErrorState.tsx; npx tsc --noEmit 2>&1 | head
+```
+
+<details><summary>result</summary>
+
+```
+app/claims/[id].tsx:9:import { colors, fonts, radius, space } from '../../src/ui/theme';
+app/claim/[asset].tsx:12:import { colors, fonts, radius, space } from '../../src/ui/theme';
+src/screens/TokenScreen.tsx:6:import { colors, fonts, radius, space } from '../ui/theme';
+src/ui/ErrorState.tsx(31,19): error TS2304: Cannot find name 'radius'.
+src/ui/ErrorState.tsx(37,38): error TS2304: Cannot find name 'fonts'.
+src/ui/ErrorState.tsx(38,58): error TS2304: Cannot find name 'fonts'.
+```
+
+</details>
+
+**Tool: Bash** Fix ErrorState import and typecheck
+
+```
+sed -i '' "s#import { colors, space } from './theme';#import { colors, fonts, radius, space } from './theme';#" src/ui/ErrorState.tsx && grep -n "from './theme'" src/ui/ErrorState.tsx && npx tsc --noEmit && echo TSC_OK && grep -n "fontSize: 20,\|input: {" app/claim/\[asset\].tsx | head
+```
+
+<details><summary>result</summary>
+
+```
+4:import { colors, fonts, radius, space } from './theme';
+TSC_OK
+238:  available: { fontSize: 20, fontFamily: fonts.semibold, color: colors.text },
+241:  input: {
+247:    fontSize: 20,
+[This command modified 1 file you've previously read: src/ui/ErrorState.tsx. Call Read before editing.]
+```
+
+</details>
+
+**Tool: Bash** Font for inputs; screenshot claim and token screens
+
+```
+python3 - <<'EOF'
+for p,old in [('app/claim/[asset].tsx',"    fontSize: 20,\n    minWidth: 0,"),('src/screens/TokenScreen.tsx',"    padding: space.md,\n    fontSize: 16,\n  },")]:
+    s=open(p).read()
+    assert old in s, p
+    s=s.replace(old, old.replace("fontSize:", "fontFamily: fonts.semibold,\n    fontSize:",1) if 'claim' in p else old.replace("fontSize: 16,","fontSize: 16,\n    fontFamily: fonts.regular,"))
+    open(p,'w').write(s)
+EOF
+npx tsc --noEmit && echo TSC_OK; S=/private/tmp/claude-501/-Users-bredek-Projects-test-claude/d4cf66c8-ccd6-4669-adca-0feea8b3f891/scratchpad; cd $S && CM_TOKEN='[token redacted]' node shot.mjs http://localhost:8081/claim/ETH $S/claim2.png 7000 "(async()=>{const i=document.querySelector('input');const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;set.call(i,'0.5');i.dispatchEvent(new Event('input',{bubbles:true}));return 'typed'})()" | grep -E "console|exception|receive" ; node shot.mjs http://localhost:8081/ $S/token2.png 5000 >/dev/null
+```
+
+<details><summary>result</summary>
+
+```
+TSC_OK
+You receive
+Shell cwd was reset to /Users/bredek/Projects/test-claude
+```
+
+</details>
+
+**Tool: Read** /private/tmp/claude-501/-Users-bredek-Projects-test-claude/d4cf66c8-ccd6-4669-adca-0feea8b3f891/scratchpad/claim2.png
+
+<details><summary>result</summary>
+
+```
+
+```
+
+</details>
+
+**Tool: Read** /private/tmp/claude-501/-Users-bredek-Projects-test-claude/d4cf66c8-ccd6-4669-adca-0feea8b3f891/scratchpad/token2.png
+
+<details><summary>result</summary>
+
+```
+
+```
+
+</details>
+
+## #39 · Claude
+
+All screens look consistent now. Next: commit, clean build, deploy, and check production.
+
+**Tool: Bash** Commit, clean build, deploy, verify production activity
+
+```
+npx vitest run 2>&1 | grep Tests && git add -A && git commit -q -m "feat(activity): 30-day payback chart, totals, top exchanges, filters, day groups
+
+Also dedupes activity across pages: the API cursor is an offset, so new
+items shift later pages and repeat entries (would double-count totals).
+Restyles claim, status and token screens with the new type scale.
+
+Co-Authored-By: Claude Opus 5.5 <[email redacted]>" && git push -q && rm -rf dist && npx expo export --platform web --clear 2>&1 | grep Exported && (grep -rl "ct1\.eyJ" dist || echo "dist clean") && npx eas-cli@latest deploy --prod --non-interactive 2>&1 | grep -E "Production URL|Error"; S=/private/tmp/claude-501/-Users-bredek-Projects-test-claude/d4cf66c8-ccd6-4669-adca-0feea8b3f891/scratchpad; cd $S && CM_TOKEN='[token redacted]' node shot.mjs https://cashmine-payback.expo.app/activity $S/prod-act.png 12000 | grep -E "console|exception|Payback, last|Top exchanges"; date -u +%H:%M
+```
+
+<details><summary>result</summary>
+
+```
+Tests  36 passed (36)
+Exported: dist
+dist clean
+Production URL  https://cashmine-payback.expo.app
+09:47
+Shell cwd was reset to /Users/bredek/Projects/test-claude
+```
+
+</details>
+
+## #40 · Claude
+
+Production didn't show the new Activity text, so I'm looking at what it actually rendered.
+
+**Tool: Bash** Show production activity render output
+
+```
+S=/private/tmp/claude-501/-Users-bredek-Projects-test-claude/d4cf66c8-ccd6-4669-adca-0feea8b3f891/scratchpad; cd $S && CM_TOKEN='[token redacted]' node shot.mjs https://cashmine-payback.expo.app/activity $S/prod-act.png 15000 | head -15
+```
+
+<details><summary>result</summary>
+
+```
+--- visible text ---
+Activity
+Claim
+24 жовт., 12:33
+-0.01246567 BTC
+Completed
+Payback earned
+Bybit · 24 жовт., 12:33
++4.75 USDT
+Pending
+Claim
+24 жовт., 12:29
+-840.533207 USDT
+Completed
+Claim
+Shell cwd was reset to /Users/bredek/Projects/test-claude
+```
+
+</details>
+
+**Tool: Bash** Compare built chunk names with what production serves
+
+```
+ls dist/_expo/static/js/web/ | grep -i activ; grep -l "Payback, last 30 days" dist/_expo/static/js/web/*.js; curl -s https://cashmine-payback.expo.app/ | grep -o '_expo/static/js/web/[^"]*' | head -3; F=$(ls dist/_expo/static/js/web/ | grep activity); curl -s -D - -o /tmp/pa.js "https://cashmine-payback.expo.app/_expo/static/js/web/$F" | grep -iE "^HTTP|cache|age:"; grep -c "Payback, last" /tmp/pa.js
+```
+
+<details><summary>result</summary>
+
+```
+activity-d47c744116ca8e38b04648c1c3f3c044.js
+dist/_expo/static/js/web/activity-d47c744116ca8e38b04648c1c3f3c044.js
+_expo/static/js/web/__expo-metro-runtime-8c088df87a31e4e6accd81c554ec290d.js
+_expo/static/js/web/__common-26a718b25919041da39ff1746b6015ef.js
+_expo/static/js/web/entry-e8e4fed5550c3b82b46e8c71e2dfac54.js
+HTTP/2 200 
+age: 23
+cache-control: must-revalidate, private, max-age=0
+0
+```
+
+</details>
+
+**Tool: Bash** Check production entry references the new activity chunk
+
+```
+ls dist/_expo/static/js/web/ | grep entry; F=$(ls dist/_expo/static/js/web/ | grep activity); curl -s --compressed "https://cashmine-payback.expo.app/_expo/static/js/web/$F" | grep -c "Payback, last"; curl -s --compressed https://cashmine-payback.expo.app/_expo/static/js/web/entry-e8e4fed5550c3b82b46e8c71e2dfac54.js | grep -o 'activity-[0-9a-f]*' | sort -u
+```
+
+<details><summary>result</summary>
+
+```
+entry-0ed5ed9da47da622ca3a109271509617.js
+0
+activity-35fe082019a8f14c50117545d1d23604
+```
+
+</details>
+
+**Tool: Bash** Redeploy with full output and check served entry
+
+```
+npx eas-cli@latest deploy --prod --non-interactive 2>&1 | grep -v "npm warn" | tail -12; sleep 5; for u in "https://cashmine-payback.expo.app/" "https://cashmine-payback.expo.app/?cb=$RANDOM"; do echo "$u -> $(curl -s $u | grep -o 'entry-[0-9a-f]*' | head -1)"; done
+```
+
+<details><summary>result</summary>
+
+```
+> Project export: static - exported 1 minute ago
+- Preparing project
+- Creating deployment
+✔ Created deployment
+- Promoting deployment to production
+✔ Promoted deployment to production
+
+🎉 Your deployment is ready
+
+Dashboard       https://expo.dev/projects/aa309fae-794a-4c7f-a64d-121df3b2c22e/hosting/deployments
+Deployment URL  https://cashmine-payback--gtuyuaiiju.expo.app
+Production URL  https://cashmine-payback.expo.app
+https://cashmine-payback.expo.app/ -> entry-e8e4fed5550c3b82b46e8c71e2dfac54
+https://cashmine-payback.expo.app/?cb=4137 -> entry-e8e4fed5550c3b82b46e8c71e2dfac54
+```
+
+</details>
+
+**Tool: Bash** Compare deployment URL, local build and production headers
+
+```
+curl -s https://cashmine-payback--gtuyuaiiju.expo.app/ | grep -o 'entry-[0-9a-f]*' | head -1; grep -o 'entry-[0-9a-f]*' dist/index.html; curl -s -D - -o /dev/null https://cashmine-payback.expo.app/ | grep -iE "cache|age|etag|expo"
+```
+
+<details><summary>result</summary>
+
+```
+entry-0ed5ed9da47da622ca3a109271509617
+entry-0ed5ed9da47da622ca3a109271509617
+age: 0
+cache-control: must-revalidate, private, max-age=0
+etag: "b80d2349a19710596202e7a07cb63762"
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+```
+
+</details>
+
+**Tool: Bash** Update NOTES/README, commit, wait for prod alias
+
+```
+python3 - <<'EOF'
+p='NOTES.md'; s=open(p).read()
+s=s.replace("""- Total payback = available + pending (claiming is already on its way out).""","""- Total payback = available + pending (claiming is already on its way out).
+- Activity removes duplicate items by `id` when merging pages. The API's cursor is an offset (`{"o":2}`), so new items arriving between page loads shift later pages and repeat entries. That showed up in the browser console as duplicate React keys. Without the fix, the totals would double-count.
+- Activity insights (a 30-day chart, earned, reversed and claimed totals, top exchanges) use the same exact BigInt math, valued at **today's** prices because the API has no historical prices, and the screen says so. Chart bars use a log scale so one large day doesn't flatten the rest. `Number` is used only for bar geometry, never for a displayed figure.
+- UI: the Inter font and an indigo palette. Amounts are never truncated: they wrap rather than hide digits.""")
+s=s.replace("""- **Activity** has no filters, and reversals show the related accrual id rather than linking to it.""","""- **Activity** insights page through up to 10 pages automatically (200 items) to cover the 30-day window. A larger history would be cut off, and the footnote says "loaded so far" in that case. Reversals show the related accrual id rather than linking to it.
+- **Hosting:** after a deploy, the `cashmine-payback.expo.app` alias can take a few minutes to point to the new build. The per-deploy U
+… (truncated)
+```
+
+<details><summary>result</summary>
+
+```
+09:49:25 entry-0ed5ed9da47da622ca3a109271509617
+```
+
+</details>
+
+**Tool: Bash** Verify production activity and home after alias update
+
+```
+S=/private/tmp/claude-501/-Users-bredek-Projects-test-claude/d4cf66c8-ccd6-4669-adca-0feea8b3f891/scratchpad; cd $S && CM_TOKEN='[token redacted]' node shot.mjs https://cashmine-payback.expo.app/activity $S/prod-act.png 15000 | grep -E "console|exception|Payback, last|Top exchanges|Earned"; CM_TOKEN='[token redacted]' node shot.mjs https://cashmine-payback.expo.app/ $S/prod-home.png 8000 | grep -E "console|exception|Your payback"
+```
+
+<details><summary>result</summary>
+
+```
+Payback, last 30 days
+Earned
+Top exchanges
+Earned
+Your payback
+Shell cwd was reset to /Users/bredek/Projects/test-claude
+```
+
+</details>
