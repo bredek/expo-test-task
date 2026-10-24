@@ -39,7 +39,7 @@ export default function SplashScreen({ onFinish }: Props) {
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: '#1F3A5F',
+    backgroundColor: '#4F46E5',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 34,
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: -0.5,
   },
   tagline: {
     color: 'rgba(255,255,255,0.75)',
